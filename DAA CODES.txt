@@ -1,0 +1,263 @@
+                 1St Code
+
+def IterativeFibo(n):
+    f1=0
+    f2=1
+    for i in range(n):
+        if i<2:
+            print(i,end =' ')
+        else :
+            f3 = f1 + f2
+            f1 = f2
+            f2 = f3
+            print(f3,end=' ')
+
+#function to implement recursive approach
+def RecursiveFibo(n):
+    if (n==0 or n==1):
+        return n
+    else:
+        return(RecursiveFibo(n-1) + RecursiveFibo(n-2))
+
+def main():
+    n=10
+
+    print("ITERATIVE FIBONACCI: ")
+    IterativeFibo(n)
+
+    print("ITERATIVE FIBONACCI: ")
+    for i in range(n):
+        print(RecursiveFibo(i),end =' ')
+
+if __name__ == '__main__':
+    main()
+
+
+			2nd Code
+
+
+
+# Huffman Coding in python
+string = 'BCAADDDCCACACAC'
+# Creating tree nodes
+class NodeTree(object):
+    def __init__(self, left=None, right=None):
+        self.left = left
+        self.right = right
+    def children(self):
+        return (self.left, self.right)
+    def nodes(self):
+        return (self.left, self.right)
+    def __str__(self):
+        return '%s_%s' % (self.left, self.right)
+# Main function implementing huffman coding
+def huffman_code_tree(node, left=True, binString=''):
+    if type(node) is str:
+        return {node: binString}
+    (l, r) = node.children()
+    d = dict()
+    d.update(huffman_code_tree(l, True, binString + '0'))
+    d.update(huffman_code_tree(r, False, binString + '1'))
+    return d
+# Calculating frequency
+freq = {}
+for c in string:
+    if c in freq:
+        freq[c] += 1
+    else:
+        freq[c] = 1
+freq = sorted(freq.items(), key=lambda x: x[1], reverse=True)
+nodes = freq
+while len(nodes) > 1:
+    (key1, c1) = nodes[-1]
+    (key2, c2) = nodes[-2]
+    nodes = nodes[:-2]
+    node = NodeTree(key1, key2)
+    nodes.append((node, c1 + c2))
+    nodes = sorted(nodes, key=lambda x: x[1], reverse=True)
+huffmanCode = huffman_code_tree(nodes[0][0])
+print(' Char | Huffman code ')
+print('----------------------')
+for (char, frequency) in freq:
+    print(' %-4r |%12s' % (char, huffmanCode[char]))
+
+
+
+
+			3rd Code
+#structure of idem which stores weight an corresponding value of item
+class Item:
+    def __init__(self, value, weight):
+        self.value = value
+        self.weight = weight
+
+#main greedy function to solve problem
+def fractionalKnapsack(W, arr):
+
+    #sorting item on basis of ratio
+    arr.sort(key=lambda x: (x.value/x.weight),reverse= True)
+
+    #uncomment to see new order of Item with their ratio for item in arr
+    #result value in knapsack
+    finalvalue =0.0
+
+    #looping through all items
+    for item in arr:
+        if item.weight <= W:
+            W -= item.weight
+            finalvalue += item.value
+
+        else:
+            finalvalue += item.value * W/item.weight
+            break
+    #returning final value
+    return finalvalue
+
+#drivers code
+if __name__ == "__main__":
+
+    #weight of knapsack
+    W = 50
+    arr = [Item(60,10), Item(100,20), Item(120,30)]
+
+    #function call
+    max_val = fractionalKnapsack(W,arr)
+    print ('Maximum value we can obtain = {}'.format(max_val))
+
+
+
+
+			4th code
+def knapSack(W,wt,val,n):
+    K =[[0 for x in range(W+1)] for x in range(n+1)]
+
+    #Build table k[][] in bottom up manner
+    for i in range(n+1):
+        for w in range(W+1):
+            if i == 0 or w == 0:
+                K[i][w] = 0
+            elif wt[i-1]<=w:
+                K[i][w]=max(val[i-1]+ K[i-1][w-wt[i-1]],K[i-1][w])
+            else:
+                K[i][w]= K[i-1][w]
+    return K[n][W]
+
+def InputList():
+    lst = []
+    n= int(input("Enter number of elements :"))
+
+    for i in range(0,n):
+        ele = int(input())
+        lst.append(ele)
+    return lst
+
+#driver code
+val = InputList()
+wt = InputList()
+W = int(input("Enter the capacity : "))
+n= len(val)
+print(knapSack(W,wt,val,n))
+
+
+			
+			5th code
+# Python3 program to solve N Queen
+# Problem using backtracking
+global N
+N = 4
+
+def printSolution(board):
+	for i in range(N):
+		for j in range(N):
+			print (board[i][j], end = " ")
+		print()
+
+# A utility function to check if a queen can
+# be placed on board[row][col]. Note that this
+# function is called when "col" queens are
+# already placed in columns from 0 to col -1.
+# So we need to check only left side for
+# attacking queens
+def isSafe(board, row, col):
+
+	# Check this row on left side
+	for i in range(col):
+		if board[row][i] == 1:
+			return False
+
+	# Check upper diagonal on left side
+	for i, j in zip(range(row, -1, -1),
+					range(col, -1, -1)):
+		if board[i][j] == 1:
+			return False
+
+	# Check lower diagonal on left side
+	for i, j in zip(range(row, N, 1),
+					range(col, -1, -1)):
+		if board[i][j] == 1:
+			return False
+
+	return True
+
+def solveNQUtil(board, col):
+	
+	# base case: If all queens are placed
+	# then return true
+	if col >= N:
+		return True
+
+	# Consider this column and try placing
+	# this queen in all rows one by one
+	for i in range(N):
+
+		if isSafe(board, i, col):
+			
+			# Place this queen in board[i][col]
+			board[i][col] = 1
+
+			# recur to place rest of the queens
+			if solveNQUtil(board, col + 1) == True:
+				return True
+
+			# If placing queen in board[i][col
+			# doesn't lead to a solution, then
+			# queen from board[i][col]
+			board[i][col] = 0
+
+	# if the queen can not be placed in any row in
+	# this column col then return false
+	return False
+
+# This function solves the N Queen problem using
+# Backtracking. It mainly uses solveNQUtil() to
+# solve the problem. It returns false if queens
+# cannot be placed, otherwise return true and
+# placement of queens in the form of 1s.
+# note that there may be more than one
+# solutions, this function prints one of the
+# feasible solutions.
+def solveNQ():
+	board = [ [0, 0, 0, 0],
+			[0, 0, 0, 0],
+			[0, 0, 0, 0],
+			[0, 0, 0, 0] ]
+
+	if solveNQUtil(board, 0) == False:
+		print ("Solution does not exist")
+		return False
+
+	printSolution(board)
+	return True
+
+# Driver Code
+solveNQ()
+
+
+
+
+
+
+
+			
+
+						
