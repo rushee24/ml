@@ -1,0 +1,386 @@
+---->"# LP3 Group B Assignment 1\n",
+    "\n",
+    "## Predict the price of the Uber ride from a given pickup point to the agreed drop-off location.\n",
+    "\n",
+    "### Perform following tasks:\n",
+    "1. Pre-process the dataset.\n",
+    "2. Identify outliers.\n",
+    "3. Check the correlation.\n",
+    "4. Implement linear regression and random forest regression models.\n",
+    "5. Evaluate the models and compare their respective scores like R2, RMSE, etc.\n",
+    "\n",
+
+#Importing required libraries
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn import metrics
+
+df = pd.read_csv('uber.csv') #Reading CSV file
+df.head()
+
+
+
+df.dtypes #Checking Datatypes.
+
+
+
+df.isnull().sum() #Checking for Null Values.
+
+
+
+df.drop(['Unnamed: 0','key'],axis=1,inplace=True) #Dropping first coloumnn as it is irrelevant.
+df.dropna(axis=0,inplace=True) #Dropping the rows with null values.
+df.head()
+
+
+
+def haversine (lon_1, lon_2, lat_1, lat_2): #Function to find the distance using the coordinates
+    lon_1, lon_2, lat_1, lat_2 = map(np.radians, [lon_1, lon_2, lat_1, lat_2]) #Converting Degrees to Radians
+    diff_lon = lon_2 - lon_1
+    diff_lat = lat_2 - lat_1
+    distance = 2 * 6371 * np.arcsin(np.sqrt(np.sin(diff_lat/2.0)**2+np.cos(lat_1)*np.cos(lat_2)*np.sin(diff_lon/2.0)**2)) #Calculationg the Distance using Haversine Formula
+    return distance
+
+df['Distance']= haversine(df['pickup_longitude'],df['dropoff_longitude'],df['pickup_latitude'],df['dropoff_latitude'])
+df['Distance'] = df['Distance'].astype(float).round(2) #Rounding-off to 2 decimals
+df.head()
+
+
+
+#Plotting a scatter plot to check for outliers.
+plt.scatter(df['Distance'], df['fare_amount'])
+plt.xlabel("Distance")
+plt.ylabel("fare_amount")
+
+
+
+#Dealing with Outliers via removing rows with too large Distance and 0 or lesser distance.
+df.drop(df[df['Distance']>60].index, inplace=True)
+df.drop(df[df['Distance']==0].index, inplace=True)
+df.drop(df[df['Distance']<0].index, inplace=True)
+#Dealing with Outliers via removing rows with 0 or lesser fare amounts.
+df.drop(df[df['fare_amount']==0].index, inplace=True)
+df.drop(df[df['fare_amount']<0].index, inplace=True)
+#Dealing with Outliers via removing rows with non-plausible fare amounts and distance travelled.
+df.drop(df[df['Distance']>100].index, inplace=True)
+df.drop(df[df['fare_amount']>100].index, inplace=True)
+df.drop(df[(df['fare_amount']>100) & (df['Distance']<1)].index, inplace = True )
+df.drop(df[(df['fare_amount']<100) & (df['Distance']>100)].index, inplace = True )
+#Plotting a Scatter Plot to check for any more outliers and also to show correlation between Fare Amount and Distance.
+plt.scatter(df['Distance'], df['fare_amount'])
+plt.xlabel("Distance")
+plt.ylabel("fare_amount")
+
+
+
+#Preprocessing the Data Using Standard Scaler in range of -1 to 1
+x = df['Distance'].values.reshape(-1, 1)        #Independent Variable
+y = df['fare_amount'].values.reshape(-1, 1)     #Dependent Variable
+std = StandardScaler()
+Y = std.fit_transform(y)
+X = std.fit_transform(x)
+#Splitting the data into training and testing set
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
+
+
+
+def apply_model(model): #Model to print the metrics of the various prediction models
+    model.fit(X_train,Y_train)
+    print("Training score = ",model.score(X_train,Y_train))
+    print("Testing score = ",model.score(X_test,Y_test))
+    print("Accuracy = ",model.score(X_test,Y_test))
+    Y_pred = model.predict(X_test)
+    print("Predicted values:\n",Y_pred)
+    print("Mean Absolute Error =", metrics.mean_absolute_error(Y_test, Y_pred))
+    print("Mean Squared Error =", metrics.mean_squared_error(Y_test, Y_pred))
+    print("Root Mean Squared Error =", np.sqrt(metrics.mean_squared_error(Y_test, Y_pred)))
+
+
+
+lr = LinearRegression()
+apply_model(lr)
+
+
+
+
+---->LP3 Assignment NO 2:
+
+Problem Definition:
+Classify the email using the binary classification method. 
+Email Spam detection has two states: a) Normal State – Not Spam, 
+b) Abnormal State – Spam. Use K-Nearest Neighbors and Support Vector Machine for classification. 
+Analyze their performance.
+
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import confusion_matrix, classification_report,accuracy_score
+
+
+
+df=pd.read_csv("emails.csv") #Reading the Dataset
+df.head()
+
+
+
+df.drop(columns=['Email No.'], inplace=True) #Dropping Email No. as it is irrelevant.
+df.head()
+
+
+
+#Splitting the Dataset
+X=df.iloc[:, :df.shape[1]-1]
+Y=df.iloc[:, -1]
+X_train, X_test, Y_train, Y_test=train_test_split(X, Y, test_size=0.20, random_state=8) 
+
+
+
+def apply_model(model):#Model to print the scores of various models
+    model.fit(X_train,Y_train)
+    print("Training score = ",model.score(X_train,Y_train))
+    print("Testing score = ",model.score(X_test,Y_test))
+    print("Accuracy = ",model.score(X_test,Y_test))
+    Y_pred = model.predict(X_test)
+    print("Predicted values:\n",Y_pred)
+    print("Confusion Matrix:\n",confusion_matrix(Y_test,Y_pred))
+    print("Classification Report:\n",classification_report(Y_test,Y_pred))
+
+
+
+knn = KNeighborsClassifier(n_neighbors=17) #KNN Model
+apply_model(knn)
+
+---->LP3 Assignment 4:
+
+Problem Definition:
+Implement Gradient Descent Algorithm to find the local minima of a function.
+For example, find the local minima of the function y=(x+3)² starting from the point x=2.
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+ 
+def mean_squared_error(y_true, y_predicted):
+    cost = np.sum((y_true-y_predicted)**2) / len(y_true) #Calculating the loss or cost
+    return cost
+ 
+def gradient_descent(x, y, iterations = 1000, learning_rate = 0.0001, stopping_threshold = 1e-6): #Gradient Descent Function
+    #Initializing weight, bias, learning rate and iterations
+    current_weight = 0.1
+    current_bias = 0.01
+    iterations = iterations
+    learning_rate = learning_rate
+    n = float(len(x))
+    costs = []
+    weights = []
+    previous_cost = None
+    
+    for i in range(iterations): #Estimation of optimal parameters
+        y_predicted = (current_weight * x) + current_bias #Making predictions
+        current_cost = mean_squared_error(y, y_predicted) #Calculationg the current cost
+        #If the change in cost is less than or equal to stopping_threshold we stop the gradient descent
+        if previous_cost and abs(previous_cost-current_cost)<=stopping_threshold:
+            break
+        previous_cost = current_cost
+        costs.append(current_cost)
+        weights.append(current_weight)
+        #Calculating the gradients
+        weight_derivative = -(2/n) * sum(x * (y-y_predicted))  
+        bias_derivative = -(2/n) * sum(y-y_predicted)
+        #Updating weights and bias
+        current_weight = current_weight - (learning_rate * weight_derivative)
+        current_bias = current_bias - (learning_rate * bias_derivative)        
+        #Printing the parameters for each 1000th iteration
+        print(f"Iteration{i+1}:Cost{current_cost},Weight\{current_weight},Bias{current_bias}")
+    #Visualizing the weights and cost at for all iterations
+    plt.figure(figsize = (8,6))
+    plt.plot(weights, costs)
+    plt.scatter(weights, costs, marker='o', color='red')
+    plt.title("Cost vs Weights")
+    plt.ylabel("Cost")
+    plt.xlabel("Weight")
+    plt.show()
+    return current_weight, current_bias
+
+#Data
+X = np.array([32.50234527, 53.42680403, 61.53035803, 47.47563963, 59.81320787,
+           55.14218841, 52.21179669, 39.29956669, 48.10504169, 52.55001444,
+           45.41973014, 54.35163488, 44.1640495 , 58.16847072, 56.72720806,
+           48.95588857, 44.68719623, 60.29732685, 45.61864377, 38.81681754])
+Y = np.array([31.70700585, 68.77759598, 62.5623823 , 71.54663223, 87.23092513,
+           78.21151827, 79.64197305, 59.17148932, 75.3312423 , 71.30087989,
+           55.16567715, 82.47884676, 62.00892325, 75.39287043, 81.43619216,
+           60.72360244, 82.89250373, 97.37989686, 48.84715332, 56.87721319])
+ 
+#Estimating weight and bias using gradient descent
+estimated_weight, eatimated_bias = gradient_descent(X, Y, iterations=2000)
+print(f"Estimated Weight: {estimated_weight}\nEstimated Bias: {eatimated_bias}")
+Y_pred = estimated_weight*X + eatimated_bias #Making predictions using estimated parameters
+#Plotting the regression line
+plt.figure(figsize = (8,6))
+plt.scatter(X, Y, marker='o', color='red')
+plt.plot([min(X), max(X)], [min(Y_pred), max(Y_pred)], color='blue',markerfacecolor='red',markersize=10,linestyle='dashed')
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.show()
+
+
+
+---->LP3 Assignment 5
+
+Problem Definition:
+Implement K-Nearest Neighbors algorithm on diabetes.csv dataset.
+Compute confusion matrix, accuracy, error rate, precision and recall on the given dataset.
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+
+
+
+df=pd.read_csv("diabetes.csv") #Reading the Dataset
+df.head()
+
+
+
+df.dtypes
+
+
+
+df["Glucose"].replace(0,df["Glucose"].mean(), inplace=True)
+df["BloodPressure"].replace(0,df["BloodPressure"].mean(), inplace=True)
+df["SkinThickness"].replace(0,df["SkinThickness"].mean(), inplace=True)
+df["Insulin"].replace(0,df["Insulin"].mean(), inplace=True)
+df["BMI"].replace(0,df["BMI"].mean(), inplace=True)
+df.head()
+
+
+
+X = df.iloc[:, :8]
+Y = df.iloc[:, 8:]
+X_train, X_test, Y_train, Y_test = train_test_split(X,Y,test_size=0.20,random_state=0)
+
+
+
+def apply_model(model):#Model to print the scores of various models
+    model.fit(X_train,Y_train)
+    print("Training score = ",model.score(X_train,Y_train))
+    print("Testing score = ",model.score(X_test,Y_test))
+    print("Accuracy = ",model.score(X_test,Y_test))
+    Y_pred = model.predict(X_test)
+    print("Predicted values:\n",Y_pred)
+    print("Confusion Matrix:\n",confusion_matrix(Y_test,Y_pred))
+    print("Classification Report:\n",classification_report(Y_test,Y_pred))
+
+
+
+knn = KNeighborsClassifier(n_neighbors=5) #KNN Model
+apply_model(knn)
+
+
+
+---->LP3 Assignment 6:
+
+Problem Definition:
+Implement K-Means clustering/ hierarchical clustering on sales_data_sample.
+csv dataset. Determine the number of clusters using the elbow method.
+
+#Importing the required libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import plotly.express as px
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+
+
+
+df = pd.read_csv('sales_data_sample.csv', encoding = 'unicode_escape') #Reading the csv file.
+df.head()
+
+
+
+#Removing the coloumns which dont add value for the analysis.
+to_drop = ['PHONE','ADDRESSLINE1','ADDRESSLINE2','CITY','STATE','POSTALCODE','TERRITORY','CONTACTLASTNAME','CONTACTFIRSTNAME','CUSTOMERNAME','ORDERNUMBER','QTR_ID','ORDERDATE']
+df = df.drop(to_drop, axis=1)
+df.head()
+
+
+
+df.nunique() #Checking unique values.
+
+
+
+df.isnull().sum()
+
+
+
+#Encodning Categorical Variables for easier processing.
+status_dict = {'Shipped':1, 'Cancelled':2, 'On Hold':2, 'Disputed':2, 'In Process':0, 'Resolved':0}
+df['STATUS'].replace(status_dict, inplace=True)
+df['PRODUCTCODE'] = pd.Categorical(df['PRODUCTCODE']).codes
+df = pd.get_dummies(data=df, columns=['PRODUCTLINE', 'DEALSIZE', 'COUNTRY'])
+df.dtypes
+
+
+
+#Using Heatmaps to find links between the data
+plt.figure(figsize = (20, 20))
+corr_matrix = df.iloc[:, :10].corr()
+sns.heatmap(corr_matrix, annot=True);
+
+
+
+#Finding correlation between variables using pairplots
+fig = px.scatter_matrix(df, dimensions=df.columns[:8], color='MONTH_ID') #Fill color by months
+fig.update_layout(title_text='Sales Data', width=1100, height=1100)
+fig.show()
+
+
+
+# Scale the data
+std = StandardScaler()
+sdf = std.fit_transform(df)
+wcss = []
+for i in range(1,15):
+    km = KMeans(n_clusters=i)
+    km.fit(sdf)
+    wcss.append(km.inertia_) # intertia is the Sum of squared distances of samples to their closest cluster center (WCSS)
+
+plt.plot(wcss, marker='o', linestyle='--')
+plt.title('The Elbow Method (Finding right number of clusters)')
+plt.xlabel('Number of CLusters')
+plt.ylabel('WCSS')
+plt.show()
+
+
+
+#Applying k-means with 5 clusters as the elbow seems to form at 5 clusters
+km = KMeans(n_clusters=5, random_state=1)
+km.fit(sdf)
+cluster_labels = km.labels_
+df = df.assign(Cluster=cluster_labels)
+df.head()
+
+
+
+df = df.groupby(['Cluster']).mean() #Grouping by Cluster
+df.head()
+
+
+
+#Heatmap after Kmeans clustering
+plt.figure(figsize = (20, 20))
+corr_matrix = df.iloc[:, :8].corr()
+sns.heatmap(corr_matrix, annot=True);
