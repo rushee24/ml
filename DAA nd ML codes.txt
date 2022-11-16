@@ -1,0 +1,527 @@
+			1st code uber.csv  based on prediction
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn import metrics
+
+df = pd.read_csv('uber.csv') 
+df.head()
+
+df.dtypes 
+
+df.isnull().sum()
+
+df.drop(['Unnamed: 0','key'],axis=1,inplace=True) 
+df.dropna(axis=0,inplace=True) 
+df.head()
+
+def haversine (lon_1, lon_2, lat_1, lat_2): #Function to find the distance using the coordinates
+    lon_1, lon_2, lat_1, lat_2 = map(np.radians, [lon_1, lon_2, lat_1, lat_2]) #Converting Degrees to Radians
+    diff_lon = lon_2 - lon_1
+    diff_lat = lat_2 - lat_1
+    distance = 2 * 6371 * np.arcsin(np.sqrt(np.sin(diff_lat/2.0)**2+np.cos(lat_1)*np.cos(lat_2)*np.sin(diff_lon/2.0)**2)) #Calculationg the Distance using Haversine Formula
+    return distance
+
+df['Distance']= haversine(df['pickup_longitude'],df['dropoff_longitude'],df['pickup_latitude'],df['dropoff_latitude'])
+df['Distance'] = df['Distance'].astype(float).round(2) #Rounding-off to 2 decimals
+df.head()
+
+plt.scatter(df['Distance'], df['fare_amount'])
+plt.xlabel("Distance")
+plt.ylabel("fare_amount")
+
+df.drop(df[df['Distance']>60].index, inplace=True)
+df.drop(df[df['Distance']==0].index, inplace=True)
+df.drop(df[df['Distance']<0].index, inplace=True)
+#Dealing with Outliers via removing rows with 0 or lesser fare amounts.
+df.drop(df[df['fare_amount']==0].index, inplace=True)
+df.drop(df[df['fare_amount']<0].index, inplace=True)
+#Dealing with Outliers via removing rows with non-plausible fare amounts and distance travelled.
+df.drop(df[df['Distance']>100].index, inplace=True)
+df.drop(df[df['fare_amount']>100].index, inplace=True)
+df.drop(df[(df['fare_amount']>100) & (df['Distance']<1)].index, inplace = True )
+df.drop(df[(df['fare_amount']<100) & (df['Distance']>100)].index, inplace = True )
+#Plotting a Scatter Plot to check for any more outliers and also to show correlation between Fare Amount and Distance.
+plt.scatter(df['Distance'], df['fare_amount'])
+plt.xlabel("Distance")
+plt.ylabel("fare_amount")
+
+
+			2nd code emails.csv  binary classification
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import confusion_matrix, classification_report,accuracy_score
+
+df=pd.read_csv("emails.csv") #Reading the Dataset
+df.head()
+
+
+df.drop(columns=['Email No.'], inplace=True) #Dropping Email No. as it is irrelevant.
+df.head()
+
+X=df.iloc[:, :df.shape[1]-1]
+Y=df.iloc[:, -1]
+X_train, X_test, Y_train, Y_test=train_test_split(X, Y, test_size=0.20, random_state=8)
+
+
+def apply_model(model):#Model to print the scores of various models
+    model.fit(X_train,Y_train)
+    print("Training score = ",model.score(X_train,Y_train))
+    print("Testing score = ",model.score(X_test,Y_test))
+    print("Accuracy = ",model.score(X_test,Y_test))
+    Y_pred = model.predict(X_test)
+    print("Predicted values:\n",Y_pred)
+    print("Confusion Matrix:\n",confusion_matrix(Y_test,Y_pred))
+    print("Classification Report:\n",classification_report(Y_test,Y_pred))
+
+knn = KNeighborsClassifier(n_neighbors=17) #KNN Model
+apply_model(knn)
+
+
+svm = SVC(kernel='linear',random_state=3,max_iter=10000) #SVM Model
+apply_model(svm)
+
+
+			4th Code no dataset gradient decent
+
+import numpy as np
+import matplotlib.pyplot as plt
+ 
+def mean_squared_error(y_true, y_predicted):
+    cost = np.sum((y_true-y_predicted)**2) / len(y_true) #Calculating the loss or cost
+    return cost
+ 
+def gradient_descent(x, y, iterations = 1000, learning_rate = 0.0001, stopping_threshold = 1e-6): #Gradient Descent Function
+    #Initializing weight, bias, learning rate and iterations
+    current_weight = 0.1
+    current_bias = 0.01
+    iterations = iterations
+    learning_rate = learning_rate
+    n = float(len(x))
+    costs = []
+    weights = []
+    previous_cost = None
+    
+    for i in range(iterations): #Estimation of optimal parameters
+        y_predicted = (current_weight * x) + current_bias #Making predictions
+        current_cost = mean_squared_error(y, y_predicted) #Calculationg the current cost
+        #If the change in cost is less than or equal to stopping_threshold we stop the gradient descent
+        if previous_cost and abs(previous_cost-current_cost)<=stopping_threshold:
+            break
+        previous_cost = current_cost
+        costs.append(current_cost)
+        weights.append(current_weight)
+        #Calculating the gradients
+        weight_derivative = -(2/n) * sum(x * (y-y_predicted))  
+        bias_derivative = -(2/n) * sum(y-y_predicted)
+        #Updating weights and bias
+        current_weight = current_weight - (learning_rate * weight_derivative)
+        current_bias = current_bias - (learning_rate * bias_derivative)        
+        #Printing the parameters for each 1000th iteration
+        print(f"Iteration{i+1}:Cost{current_cost},Weight\{current_weight},Bias{current_bias}")
+    #Visualizing the weights and cost at for all iterations
+    plt.figure(figsize = (8,6))
+    plt.plot(weights, costs)
+    plt.scatter(weights, costs, marker='o', color='red')
+    plt.title("Cost vs Weights")
+    plt.ylabel("Cost")
+    plt.xlabel("Weight")
+    plt.show()
+    return current_weight, current_bias
+
+#Data
+X = np.array([32.50234527, 53.42680403, 61.53035803, 47.47563963, 59.81320787,
+           55.14218841, 52.21179669, 39.29956669, 48.10504169, 52.55001444,
+           45.41973014, 54.35163488, 44.1640495 , 58.16847072, 56.72720806,
+           48.95588857, 44.68719623, 60.29732685, 45.61864377, 38.81681754])
+Y = np.array([31.70700585, 68.77759598, 62.5623823 , 71.54663223, 87.23092513,
+           78.21151827, 79.64197305, 59.17148932, 75.3312423 , 71.30087989,
+           55.16567715, 82.47884676, 62.00892325, 75.39287043, 81.43619216,
+           60.72360244, 82.89250373, 97.37989686, 48.84715332, 56.87721319])
+ 
+#Estimating weight and bias using gradient descent
+estimated_weight, eatimated_bias = gradient_descent(X, Y, iterations=2000)
+print(f"Estimated Weight: {estimated_weight}\nEstimated Bias: {eatimated_bias}")
+Y_pred = estimated_weight*X + eatimated_bias #Making predictions using estimated parameters
+#Plotting the regression line
+plt.figure(figsize = (8,6))
+plt.scatter(X, Y, marker='o', color='red')
+plt.plot([min(X), max(X)], [min(Y_pred), max(Y_pred)], color='blue',markerfacecolor='red',markersize=10,linestyle='dashed')
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.show()
+
+
+              5th code  diabetes.csv  K-nearest Neighbour 
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+
+df=pd.read_csv("diabetes.csv") #Reading the Dataset
+df.head()
+
+
+df.dtypes
+
+
+df["Glucose"].replace(0,df["Glucose"].mean(), inplace=True)
+df["BloodPressure"].replace(0,df["BloodPressure"].mean(), inplace=True)
+df["SkinThickness"].replace(0,df["SkinThickness"].mean(), inplace=True)
+df["Insulin"].replace(0,df["Insulin"].mean(), inplace=True)
+df["BMI"].replace(0,df["BMI"].mean(), inplace=True)
+df.head()
+
+X = df.iloc[:, :8]
+Y = df.iloc[:, 8:]
+X_train, X_test, Y_train, Y_test = train_test_split(X,Y,test_size=0.20,random_state=0)
+
+
+def apply_model(model):#Model to print the scores of various models
+    model.fit(X_train,Y_train)
+    print("Training score = ",model.score(X_train,Y_train))
+    print("Testing score = ",model.score(X_test,Y_test))
+    print("Accuracy = ",model.score(X_test,Y_test))
+    Y_pred = model.predict(X_test)
+    print("Predicted values:\n",Y_pred)
+    print("Confusion Matrix:\n",confusion_matrix(Y_test,Y_pred))
+    print("Classification Report:\n",classification_report(Y_test,Y_pred))
+
+
+knn = KNeighborsClassifier(n_neighbors=5) #KNN Model
+apply_model(knn)
+
+
+
+                     6th Code  sales_data_sample.csv  k means clustering
+
+
+#Importing the required libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import plotly.express as px
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+
+df = pd.read_csv('sales_data_sample.csv', encoding = 'unicode_escape') #Reading the csv file.
+df.head()
+
+
+to_drop = ['PHONE','ADDRESSLINE1','ADDRESSLINE2','CITY','STATE','POSTALCODE','TERRITORY','CONTACTLASTNAME','CONTACTFIRSTNAME','CUSTOMERNAME','ORDERNUMBER','QTR_ID','ORDERDATE']
+df = df.drop(to_drop, axis=1)
+df.head()
+
+df.nunique() #Checking unique values.
+
+df.isnull().sum()
+
+status_dict = {'Shipped':1, 'Cancelled':2, 'On Hold':2, 'Disputed':2, 'In Process':0, 'Resolved':0}
+df['STATUS'].replace(status_dict, inplace=True)
+df['PRODUCTCODE'] = pd.Categorical(df['PRODUCTCODE']).codes
+df = pd.get_dummies(data=df, columns=['PRODUCTLINE', 'DEALSIZE', 'COUNTRY'])
+df.dtypes
+
+plt.figure(figsize = (20, 20))
+corr_matrix = df.iloc[:, :10].corr()
+sns.heatmap(corr_matrix, annot=True);
+
+fig = px.scatter_matrix(df, dimensions=df.columns[:8], color='MONTH_ID') #Fill color by months
+fig.update_layout(title_text='Sales Data', width=1100, height=1100)
+fig.show()
+
+
+
+
+
+                 1St Code fibonacci
+
+def IterativeFibo(n):
+    f1=0
+    f2=1
+    for i in range(n):
+        if i<2:
+            print(i,end =' ')
+        else :
+            f3 = f1 + f2
+            f1 = f2
+            f2 = f3
+            print(f3,end=' ')
+
+#function to implement recursive approach
+def RecursiveFibo(n):
+    if (n==0 or n==1):
+        return n
+    else:
+        return(RecursiveFibo(n-1) + RecursiveFibo(n-2))
+
+def main():
+    n=10
+
+    print("ITERATIVE FIBONACCI: ")
+    IterativeFibo(n)
+
+    print("ITERATIVE FIBONACCI: ")
+    for i in range(n):
+        print(RecursiveFibo(i),end =' ')
+
+if __name__ == '__main__':
+    main()
+
+
+			2nd Code huffman
+
+
+
+# Huffman Coding in python
+string = 'BCAADDDCCACACAC'
+# Creating tree nodes
+class NodeTree(object):
+    def __init__(self, left=None, right=None):
+        self.left = left
+        self.right = right
+    def children(self):
+        return (self.left, self.right)
+    def nodes(self):
+        return (self.left, self.right)
+    def __str__(self):
+        return '%s_%s' % (self.left, self.right)
+# Main function implementing huffman coding
+def huffman_code_tree(node, left=True, binString=''):
+    if type(node) is str:
+        return {node: binString}
+    (l, r) = node.children()
+    d = dict()
+    d.update(huffman_code_tree(l, True, binString + '0'))
+    d.update(huffman_code_tree(r, False, binString + '1'))
+    return d
+# Calculating frequency
+freq = {}
+for c in string:
+    if c in freq:
+        freq[c] += 1
+    else:
+        freq[c] = 1
+freq = sorted(freq.items(), key=lambda x: x[1], reverse=True)
+nodes = freq
+while len(nodes) > 1:
+    (key1, c1) = nodes[-1]
+    (key2, c2) = nodes[-2]
+    nodes = nodes[:-2]
+    node = NodeTree(key1, key2)
+    nodes.append((node, c1 + c2))
+    nodes = sorted(nodes, key=lambda x: x[1], reverse=True)
+huffmanCode = huffman_code_tree(nodes[0][0])
+print(' Char | Huffman code ')
+print('----------------------')
+for (char, frequency) in freq:
+    print(' %-4r |%12s' % (char, huffmanCode[char]))
+
+
+
+
+			3rd Code fractional knapsack greedy method
+
+#structure of idem which stores weight an corresponding value of item
+class Item:
+    def __init__(self, value, weight):
+        self.value = value
+        self.weight = weight
+
+#main greedy function to solve problem
+def fractionalKnapsack(W, arr):
+
+    #sorting item on basis of ratio
+    arr.sort(key=lambda x: (x.value/x.weight),reverse= True)
+
+    #uncomment to see new order of Item with their ratio for item in arr
+    #result value in knapsack
+    finalvalue =0.0
+
+    #looping through all items
+    for item in arr:
+        if item.weight <= W:
+            W -= item.weight
+            finalvalue += item.value
+
+        else:
+            finalvalue += item.value * W/item.weight
+            break
+    #returning final value
+    return finalvalue
+
+#drivers code
+if __name__ == "__main__":
+
+    #weight of knapsack
+    W = 50
+    arr = [Item(60,10), Item(100,20), Item(120,30)]
+
+    #function call
+    max_val = fractionalKnapsack(W,arr)
+    print ('Maximum value we can obtain = {}'.format(max_val))
+
+
+
+
+			4th code  0-1 knapsack dynamic progra branch or boundry
+
+
+def knapSack(W,wt,val,n):
+    K =[[0 for x in range(W+1)] for x in range(n+1)]
+
+    #Build table k[][] in bottom up manner
+    for i in range(n+1):
+        for w in range(W+1):
+            if i == 0 or w == 0:
+                K[i][w] = 0
+            elif wt[i-1]<=w:
+                K[i][w]=max(val[i-1]+ K[i-1][w-wt[i-1]],K[i-1][w])
+            else:
+                K[i][w]= K[i-1][w]
+    return K[n][W]
+
+def InputList():
+    lst = []
+    n= int(input("Enter number of elements :"))
+
+    for i in range(0,n):
+        ele = int(input())
+        lst.append(ele)
+    return lst
+
+#driver code
+val = InputList()
+wt = InputList()
+W = int(input("Enter the capacity : "))
+n= len(val)
+print(knapSack(W,wt,val,n))
+
+
+
+
+			
+			5th code  N queens 
+
+
+# Python3 program to solve N Queen
+# Problem using backtracking
+global N
+N = 4
+
+def printSolution(board):
+	for i in range(N):
+		for j in range(N):
+			print (board[i][j], end = " ")
+		print()
+
+# A utility function to check if a queen can
+# be placed on board[row][col]. Note that this
+# function is called when "col" queens are
+# already placed in columns from 0 to col -1.
+# So we need to check only left side for
+# attacking queens
+def isSafe(board, row, col):
+
+	# Check this row on left side
+	for i in range(col):
+		if board[row][i] == 1:
+			return False
+
+	# Check upper diagonal on left side
+	for i, j in zip(range(row, -1, -1),
+					range(col, -1, -1)):
+		if board[i][j] == 1:
+			return False
+
+	# Check lower diagonal on left side
+	for i, j in zip(range(row, N, 1),
+					range(col, -1, -1)):
+		if board[i][j] == 1:
+			return False
+
+	return True
+
+def solveNQUtil(board, col):
+	
+	# base case: If all queens are placed
+	# then return true
+	if col >= N:
+		return True
+
+	# Consider this column and try placing
+	# this queen in all rows one by one
+	for i in range(N):
+
+		if isSafe(board, i, col):
+			
+			# Place this queen in board[i][col]
+			board[i][col] = 1
+
+			# recur to place rest of the queens
+			if solveNQUtil(board, col + 1) == True:
+				return True
+
+			# If placing queen in board[i][col
+			# doesn't lead to a solution, then
+			# queen from board[i][col]
+			board[i][col] = 0
+
+	# if the queen can not be placed in any row in
+	# this column col then return false
+	return False
+
+# This function solves the N Queen problem using
+# Backtracking. It mainly uses solveNQUtil() to
+# solve the problem. It returns false if queens
+# cannot be placed, otherwise return true and
+# placement of queens in the form of 1s.
+# note that there may be more than one
+# solutions, this function prints one of the
+# feasible solutions.
+def solveNQ():
+	board = [ [0, 0, 0, 0],
+			[0, 0, 0, 0],
+			[0, 0, 0, 0],
+			[0, 0, 0, 0] ]
+
+	if solveNQUtil(board, 0) == False:
+		print ("Solution does not exist")
+		return False
+
+	printSolution(board)
+	return True
+
+# Driver Code
+solveNQ()
+
+
+
+
+
+
+
+			
+
+						
+
+
+
+
+
+
+
+
+
